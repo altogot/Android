@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">My Application</string>
+    <string name="bluetoothState">Bluetooth</string>
+    <string name="stopVibrate">STOP</string>
+</resources>
