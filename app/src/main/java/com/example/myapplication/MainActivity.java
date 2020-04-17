@@ -7,26 +7,37 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.EditText;
+import android.widget.Toast;
 
 import com.example.BroadcastReveiver.BluetoothListenerReceiver;
-import com.example.Utils.VibrateUtil;
+
+import com.example.Utils.ScreenListener;
 
 import java.util.Iterator;
 import java.util.Set;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static final String TAG = "MainActivity";
 
     private BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
 
-    private BluetoothListenerReceiver bluetoothListenerReceiver;
+    private BluetoothListenerReceiver bluetoothListenerReceiver;//蓝牙状态广播
+
+    private SharedPreferences sharedPreferences;//轻量级数据库
 
     private boolean isVirating = true;
+
+    private ScreenListener screenListener;//屏幕监听器
+
 
     private void StateON() {
         if(!adapter.isEnabled()) {
@@ -66,11 +77,16 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         bluetoothListenerReceiver = new BluetoothListenerReceiver();
-        final Context context = this;
+//        final Context context = this;
         //注册广播
         this.registerReceiver(bluetoothListenerReceiver, BluetoothStateFilter());
         //蓝牙按钮
         CompoundButton openBlueTooth = (CompoundButton) findViewById(R.id.openBlueTooth);
+//        //开启屏幕监听服务
+//        Intent intent = new Intent(this, ScreenLockedService.class);
+//        startService(intent);
+        init();
+
         if(adapter.getState() == BluetoothAdapter.STATE_ON) {
             openBlueTooth.setChecked(true);
             StateON();
@@ -87,20 +103,85 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-        //停止振动按钮
-        Button stopVibrateButton = (Button) findViewById(R.id.stopVibrate);
-        stopVibrateButton.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-                VibrateUtil.virateCancle(context);
-            }
-        });
+        //保存紧急联系人
+        Button confirmPhoneButton = (Button) findViewById(R.id.confirmPhone);
+        confirmPhoneButton.setOnClickListener(this);
+        BaseApplication.addDestroyActivity(this, "MainActivity");
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        //Intent intent = new Intent(this, ScreenLockedService.class);
+        //stopService(intent);
         this.unregisterReceiver(bluetoothListenerReceiver);
+        screenListener.unregisterScreenLockedListener();
+        Log.e(TAG, "onDestroy: ------退出app" );
+    }
+
+    void init() {
+        sharedPreferences = getSharedPreferences("share", Context.MODE_PRIVATE);//初始化数据库
+        final SharedPreferences.Editor editor = sharedPreferences.edit();//设置editor用于往数据库里增删数据
+        editor.putBoolean("isLocked", false);
+        editor.commit();
+        screenListener = new ScreenListener(this);
+        screenListener.begin(new ScreenListener.ScreenStateListener() {
+
+            @Override
+            public void onScreenOn() {
+                Log.e(TAG, "onScreenOn: -----屏幕已点亮");
+                if(sharedPreferences.getBoolean("isLocked", false)) {
+                    Log.e(TAG, "onScreenOn: -----进入锁屏界面");
+                    Intent intent = new Intent(MainActivity.this, ScreenLockedActivity.class);
+                    startActivity(intent);
+                }
+
+            }
+
+            @Override
+            public void onScreenOff() {
+                Log.e(TAG, "onScreenoff: -----屏幕已关闭");
+                editor.putBoolean("isLocked", true);
+                editor.commit();
+                BaseApplication.destroyActivity("ScreenLockedActivity");
+            }
+
+            @Override
+            public void onUserPresent() {
+                Log.e(TAG, "onUserPresent: -----屏幕已解锁");
+                editor.putBoolean("isLocked", false);
+                editor.commit();
+            }
+        });
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch(v.getId()) {
+            case R.id.confirmPhone:
+                EditText editText = (EditText) findViewById(R.id.phoneNumber);
+                String phoneNumber =  editText.getText().toString().trim();
+                if (TextUtils.isEmpty(phoneNumber)) {
+                    Toast.makeText(MainActivity.this, "请输入电话号码", Toast.LENGTH_SHORT).show();
+                    editText.requestFocus();
+                } else if (phoneNumber.length() != 11) {
+                    Toast.makeText(MainActivity.this, "电话号码位数不正确", Toast.LENGTH_SHORT).show();
+                    editText.requestFocus();
+                } else {
+                    String num = "[1][358]\\d{9}";
+                    if (phoneNumber.matches(num)) {
+                        Toast.makeText(MainActivity.this, "保存成功", Toast.LENGTH_SHORT).show();
+                        final SharedPreferences.Editor editor = sharedPreferences.edit();
+                        editor.putString("phone", phoneNumber);
+                        editor.commit();
+                        editText.clearFocus();
+                        Toast.makeText(MainActivity.this, "保存成功", Toast.LENGTH_SHORT).show();
+                    }
+                    else {
+                        Toast.makeText(MainActivity.this, "请输入正确的手机号码", Toast.LENGTH_SHORT).show();
+                    }
+                }
+                break;
+        }
     }
 }

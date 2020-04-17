@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:focusableInTouchMode="true"
     tools:context=".MainActivity">
 
 
@@ -39,13 +40,28 @@
         app:layout_constraintLeft_toRightOf="@+id/bluetoothState"
         app:layout_constraintBaseline_toBaselineOf="@+id/bluetoothState"/>
 
-    <Button
-        android:id="@+id/stopVibrate"
-        android:text="@string/stopVibrate"
+
+    <EditText
+        android:id="@+id/phoneNumber"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:hint="紧急联系人号码"
+        android:inputType="phone"
+        android:singleLine="true"
+        android:textColorHint="#95A1AA"
+        android:textScaleX="1.5"
         app:layout_constraintTop_toBottomOf="@id/bluetoothState"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"/>
+
+    <Button
+        android:id="@+id/confirmPhone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="确认"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/bluetoothState" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
