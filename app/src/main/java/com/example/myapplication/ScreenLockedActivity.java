@@ -2,7 +2,7 @@ package com.example.myapplication;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.app.KeyguardManager;
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -10,19 +10,24 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.Toast;
-
-import com.example.Utils.ScreenListener;
 import com.example.Utils.VibrateUtil;
+
+import pub.devrel.easypermissions.EasyPermissions;
 
 public class ScreenLockedActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static final String TAG = "ScreenLockedActivity";
 
     private SharedPreferences sharedPreferences;
+
+    public static final String[] dualSimTypes = { "subscription", "Subscription",
+            "com.android.phone.extra.slot",
+            "phone", "com.android.phone.DialingMode",
+            "simId", "simnum", "phone_type",
+            "simSlot" };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,20 +47,7 @@ public class ScreenLockedActivity extends AppCompatActivity implements View.OnCl
     public void onClick(View v) {
         switch(v.getId()) {
             case R.id.sos://调用一键求救功能
-                Log.e(TAG, "onClick: ------调用一键求救功能");
-                sharedPreferences = getSharedPreferences("share", Context.MODE_PRIVATE);
-                Intent intent = new Intent();
-                intent.setAction(Intent.ACTION_CALL);
-                String phoneNumber = sharedPreferences.getString("phone", "");
-                if(!phoneNumber.equals("")) {
-                    Log.e(TAG, "onClick: -----紧急联系人手机号:" + phoneNumber);
-                    Uri data = Uri.parse("tel:" + phoneNumber);
-                    intent.setData(data);
-                    startActivity(intent);
-                } else {
-                    Log.e(TAG, "onClick: -----未设置紧急联系人");
-                    Toast.makeText(this, "请设置紧急联系人", Toast.LENGTH_SHORT).show();
-                }
+                call();
                 break;
             case R.id.stopAlert://调用误触功能
                 //关闭自定义振动
@@ -64,6 +56,27 @@ public class ScreenLockedActivity extends AppCompatActivity implements View.OnCl
                 break;
         }
 
+    }
+
+    //拨打电话
+    private void call() {
+        if(!EasyPermissions.hasPermissions(this, Manifest.permission.CALL_PHONE)) {
+            EasyPermissions.requestPermissions(this, "获取电话权限", 1000, Manifest.permission.CALL_PHONE);
+        }
+        sharedPreferences = getSharedPreferences("share", Context.MODE_PRIVATE);
+        String phoneNumber = sharedPreferences.getString("phone", "");
+        if(!phoneNumber.equals("")) {
+            Log.e(TAG, "onClick: -----紧急联系人手机号:" + phoneNumber);
+            Intent callIntent = new Intent(Intent.ACTION_CALL).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            callIntent.setData(Uri.parse("tel:" + phoneNumber));
+            for (int i=0; i < dualSimTypes.length; i++) {
+                callIntent.putExtra(dualSimTypes[i], 2);
+            }
+            this.startActivity(callIntent);
+        } else {
+            Log.e(TAG, "onClick: -----未设置紧急联系人");
+            Toast.makeText(this, "请设置紧急联系人", Toast.LENGTH_SHORT).show();
+        }
     }
 
 

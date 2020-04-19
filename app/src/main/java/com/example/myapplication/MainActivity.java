@@ -1,7 +1,9 @@
 package com.example.myapplication;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
@@ -21,8 +23,11 @@ import com.example.BroadcastReveiver.BluetoothListenerReceiver;
 
 import com.example.Utils.ScreenListener;
 
+import java.security.Permission;
 import java.util.Iterator;
 import java.util.Set;
+
+import pub.devrel.easypermissions.EasyPermissions;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -37,6 +42,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private boolean isVirating = true;
 
     private ScreenListener screenListener;//屏幕监听器
+
+    private static final int PERMISSIONS = 100;//请求码
 
 
     private void StateON() {
@@ -76,6 +83,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        //获取权限
+        getPermission();
         bluetoothListenerReceiver = new BluetoothListenerReceiver();
 //        final Context context = this;
         //注册广播
@@ -182,6 +191,33 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }
                 }
                 break;
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
+    }
+
+    //获取权限
+    public void getPermission() {
+        String bluetooth[] = {Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN, };
+        String[] perms = {Manifest.permission.VIBRATE, Manifest.permission.DISABLE_KEYGUARD, Manifest.permission.WAKE_LOCK, Manifest.permission.CALL_PHONE};
+        if(!EasyPermissions.hasPermissions(this, bluetooth)) {
+            EasyPermissions.requestPermissions(this, "获取蓝牙权限", PERMISSIONS, bluetooth);
+        }
+        if(!EasyPermissions.hasPermissions(this, perms[0])) {
+            EasyPermissions.requestPermissions(this, "获取振动权限", PERMISSIONS, perms[0]);
+        }
+        if(!EasyPermissions.hasPermissions(this, perms[1])) {
+            EasyPermissions.requestPermissions(this, "获取锁屏权限", PERMISSIONS, perms[1]);
+        }
+        if(!EasyPermissions.hasPermissions(this, perms[2])) {
+            EasyPermissions.requestPermissions(this, "获取打开屏幕权限", PERMISSIONS, perms[2]);
+        }
+        if(!EasyPermissions.hasPermissions(this, perms[3])) {
+            EasyPermissions.requestPermissions(this, "获取电话权限", PERMISSIONS, perms[3]);
         }
     }
 }
